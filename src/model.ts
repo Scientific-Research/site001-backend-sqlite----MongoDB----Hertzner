@@ -1,103 +1,157 @@
-import Database from 'better-sqlite3';
-import { IFlashcard, INewFlashcard } from './interfaces.js';
-import * as tools from './tools.js';
-import * as model from './model.js';
+import mongoose from "mongoose";
+import { Flashcard } from "./models/Flashcard.js";
+import * as config from "./config.js";
+import { IFlashcard, INewFlashcard } from "./interfaces.js";
 
-const dbAbsolutePathAndFileName = tools.absolutifyPathAndFileName('src/data/db.sqlite');
-const db = new Database(dbAbsolutePathAndFileName);
-db.pragma(`journal_mode = WAL`);
+mongoose.set("strictQuery", false);
+mongoose.connect(config.MONGODB_CONNECTION);
 
-import fs from 'fs';
+const decorateAndSanitizeFlashcard = (docFlashcard: any) => {
+  const flashcard: IFlashcard = {
+    ...docFlashcard.toObject({ versionKey: false }),
+    // languageText: docBook.language.charAt(0).toUpperCase() + docBook.language.slice(1)
+  };
+  return flashcard;
+};
 
-export const getFlashcards = (): IFlashcard[] => {
-	const stmt = db.prepare(`SELECT * from flashcards`);
-	const flashcards: IFlashcard[] = [];
-	for (let row of stmt.iterate()) {
-		flashcards.push(row);
-	}
-	return flashcards;
-}
+// export const getFlashcards = (): IFlashcard[] => {
+//   const stmt = db.prepare(`SELECT * from flashcards`);
+//   const flashcards: IFlashcard[] = [];
+//   for (let row of stmt.iterate()) {
+//     flashcards.push(row);
+//   }
+//   return flashcards;
+// };
 
-export const getFlashcard = (id: number): IFlashcard => {
-	const row = db.prepare('SELECT * FROM flashcards WHERE id = ?').get(id);
-	if (row === undefined) {
-		return row;
-	} else {
-		const flashcard: IFlashcard = {
-			...row
-		};
-		return flashcard;
-	}
-}
+export const getFlashcards = async () => {
+  const docFlashcards = await Flashcard.find();
+  const flashcards: IFlashcard[] = [];
+  docFlashcards.forEach((docFlashcard) => {
+    flashcards.push(decorateAndSanitizeFlashcard(docFlashcard));
+  });
+  return flashcards;
+};
 
-export const deleteFlashcard = (id: number) => {
-	try {
-		const formerFlashcard = model.getFlashcard(id);
-		const stmt = db.prepare(`DELETE FROM flashcards WHERE id = ?`);
-		const result = stmt.run(id);
-		if (result.changes === 1) {
-			return {
-				status: "success",
-				deletedFlashcard: formerFlashcard
-			}
-		} else {
-			return {
-				status: "error",
-				message: `database changes = ${result.changes}`
-			}
-		}
-	} 
-	catch (e) {
-		return {
-			status: "error",
-			message: e.message
-		}
-	}
-}
+// export const getFlashcard = (id: number): IFlashcard => {
+//   const row = db.prepare("SELECT * FROM flashcards WHERE id = ?").get(id);
+//   if (row === undefined) {
+//     return row;
+//   } else {
+//     const flashcard: IFlashcard = {
+//       ...row,
+//     };
+//     return flashcard;
+//   }
+// };
 
-export const editFlashcard = (id: number, newFlashcard: INewFlashcard) => {
-	try {
-		const stmt = db.prepare(`UPDATE flashcards SET category = ?, front = ?, back = ? WHERE id = ?`);
-		const result = stmt.run(newFlashcard.category, newFlashcard.front, newFlashcard.back, id);
-		if (result.changes === 1) {
-			return {
-				status: "success",
-				editedFlashcard: model.getFlashcard(id)
-			}
-		} else {
-			return {
-				status: "error",
-				message: `database changes = ${result.changes}`
-			}
-		}
-	}
-	catch (e) {
-		return {
-			status: "error",
-			message: e.message
-		}
-	}
-}
+export const getFlashcard = async (_id: string) => {
+  const rawFlashcard = await Flashcard.findOne({ _id });
+  const flashcard = decorateAndSanitizeFlashcard(rawFlashcard);
+  return flashcard;
+};
 
-export const addFlashcard = (flashcard: INewFlashcard) => {
-	try {
-		const stmt = db.prepare(`INSERT INTO flashcards (category, front, back) VALUES (?, ?, ?)`);
-		const result = stmt.run(flashcard.category, flashcard.front, flashcard.back);
-		return {
-			status: "success",
-			idOfNewRecord: result.lastInsertRowid
-		}
-	}
-	catch (e) {
-		return {
-			status: "error",
-			message: e.message
-		}
-	}
-}
+// export const deleteFlashcard = (id: number) => {
+// 	try {
+// 		const formerFlashcard = model.getFlashcard(id);
+// 		const stmt = db.prepare(`DELETE FROM flashcards WHERE id = ?`);
+// 		const result = stmt.run(id);
+// 		if (result.changes === 1) {
+// 			return {
+// 				status: "success",
+// 				deletedFlashcard: formerFlashcard
+// 			}
+// 		} else {
+// 			return {
+// 				status: "error",
+// 				message: `database changes = ${result.changes}`
+// 			}
+// 		}
+// 	}
+// 	catch (e) {
+// 		return {
+// 			status: "error",
+// 			message: e.message
+// 		}
+// 	}
+// }
+
+export const deleteFlashcard = async (_id: string) => {
+  const result = await Flashcard.deleteOne({ _id });
+  return result;
+};
+
+// export const editFlashcard = (id: number, newFlashcard: INewFlashcard) => {
+//   try {
+//     const stmt = db.prepare(
+//       `UPDATE flashcards SET category = ?, front = ?, back = ? WHERE id = ?`
+//     );
+//     const result = stmt.run(
+//       newFlashcard.category,
+//       newFlashcard.front,
+//       newFlashcard.back,
+//       id
+//     );
+//     if (result.changes === 1) {
+//       return {
+//         status: "success",
+//         editedFlashcard: model.getFlashcard(id),
+//       };
+//     } else {
+//       return {
+//         status: "error",
+//         message: `database changes = ${result.changes}`,
+//       };
+//     }
+//   } catch (e) {
+//     return {
+//       status: "error",
+//       message: e.message,
+//     };
+//   }
+// };
+
+export const editFlashcard = async (
+  _id: string,
+  changedFlashcard: INewFlashcard
+) => {
+  const oldFlashcard = await Flashcard.find({ _id });
+  await Flashcard.updateOne({ _id }, { $set: { ...changedFlashcard } });
+  const newFlashcard = await Flashcard.find({ _id });
+  return { oldFlashcard, newFlashcard };
+};
+
+// export const addFlashcard = (flashcard: INewFlashcard) => {
+//   try {
+//     const stmt = db.prepare(
+//       `INSERT INTO flashcards (category, front, back) VALUES (?, ?, ?)`
+//     );
+//     const result = stmt.run(
+//       flashcard.category,
+//       flashcard.front,
+//       flashcard.back
+//     );
+//     return {
+//       status: "success",
+//       idOfNewRecord: result.lastInsertRowid,
+//     };
+//   } catch (e) {
+//     return {
+//       status: "error",
+//       message: e.message,
+//     };
+//   }
+// };
+
+export const addFlashcard = async (flashcard: INewFlashcard) => {
+  return new Promise(async (resolve, reject) => {
+    const docFlashcard = new Flashcard(flashcard);
+    const addedDocFlashcard = await docFlashcard.save();
+    resolve(addedDocFlashcard.toObject({ versionKey: false }));
+  });
+};
 
 export const getApiInstructions = () => {
-	return `
+  return `
 <style>
 	body {
 		background-color: #444;
@@ -120,7 +174,7 @@ export const getApiInstructions = () => {
 		font-family: courier;
 	}
 </style>
-<h1>SQLite Site API</h1>
+<h1>MongoDB Site API</h1>
 
 <h2>public routes</h2>
 <ul>
@@ -136,4 +190,4 @@ export const getApiInstructions = () => {
 	<li>GET <span class="route">/logout</span> - log current user out</li>
 </ul>
 	`;
-}
+};
