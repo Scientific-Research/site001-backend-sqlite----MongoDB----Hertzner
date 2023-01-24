@@ -6,7 +6,10 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "nodemon",
-		"build": "tsc"
+		"build": "tsc",
+		"setup": "pm2 start --name site001-backend npm -- start",
+		"start": "node dist/server.js",
+		"deploy": "git pull --no-rebase && npm i && npm run build && pm2 restart site001-backend --update-env --time && pm2 save"
 	},
 	"nodemonConfig": {
 		"watch": [
