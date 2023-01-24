@@ -5,7 +5,7 @@ export interface INewFlashcard {
 }
 
 export interface IFlashcard extends INewFlashcard {
-  id: number;
+//   id: number;
   _id: string;
   languageText: string;
 }

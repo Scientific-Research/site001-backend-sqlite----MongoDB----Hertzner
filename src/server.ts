@@ -2,7 +2,7 @@ import session from "express-session";
 import express from "express";
 import cors from "cors";
 import * as model from "./model.js";
-import dotenv from "dotenv";
+// import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import * as config from "./config.js";
 import { INewFlashcard } from "./interfaces.js";
@@ -13,7 +13,7 @@ declare module "express-session" {
   }
 }
 
-dotenv.config();
+// dotenv.config();
 
 const app = express();
 app.use(
@@ -95,49 +95,43 @@ const authorizeUser = (
   }
 };
 
-// app.post(
-//   "/flashcard",
-//   authorizeUser,
-//   (req: express.Request, res: express.Response) => {
-//     const flashcard = req.body.flashcard;
-//     const result = model.addFlashcard(flashcard);
-//     res.json(result);
-//   }
-// );
+app.post(
+  "/flashcard",
+  authorizeUser,
+  (req: express.Request, res: express.Response) => {
+    const flashcard = req.body.flashcard;
+    const result = model.addFlashcard(flashcard);
+    res.json(result);
+  }
+);
 
-app.post("/flashcard", authorizeUser, async (req, res) => {
-  const flashcard: INewFlashcard = req.body;
-  const result = await model.addFlashcard(flashcard);
-  res.status(200).send(result);
-});
+// app.post("/flashcard", authorizeUser, async (req, res) => {
+//   const flashcard: INewFlashcard = req.body;
+//   const result = await model.addFlashcard(flashcard);
+//   res.status(200).send(result);
+// });
 
-// app.put(
-//   "/flashcard/:id",
-//   authorizeUser,
-//   (req: express.Request, res: express.Response) => {
-//     const id = Number(req.params.id);
-//     const newFlashcard: INewFlashcard = req.body.flashcard;
-//     if (isNaN(id)) {
-//       res.status(400).send({
-//         error: true,
-//         message: "sent string as id, should be number",
-//       });
-//     } else {
-//       const result = model.editFlashcard(id, newFlashcard);
-//       res.json(result);
-//     }
-//   }
-// );
+app.put(
+  "/flashcard/:id",
+  authorizeUser,
+  (req: express.Request, res: express.Response) => {
+    const _id = req.params.id;
+    const newFlashcard: INewFlashcard = req.body.flashcard;
+    const result = model.editFlashcard(_id, newFlashcard);
+    res.status(200).json(result);
+    // res.json(result);
+  }
+);
 
-app.put("/flashcard/:id", authorizeUser, async (req, res) => {
-  const _id = req.params.id;
-  const flashcard: INewFlashcard = req.body;
-  const result = await model.editFlashcard(_id, flashcard);
-  res.status(200).json({
-    oldFlashcard: result.oldFlashcard,
-    result: result.newFlashcard,
-  });
-});
+// app.put("/flashcard/:id", authorizeUser, async (req, res) => {
+//   const _id = req.params.id;
+//   const flashcard: INewFlashcard = req.body;
+//   const result = await model.editFlashcard(_id, flashcard);
+//   res.status(200).json({
+//     oldFlashcard: result.oldFlashcard,
+//     result: result.newFlashcard,
+//   });
+// });
 
 // app.delete(
 //   "/flashcard/:id",
@@ -175,5 +169,7 @@ app.get("/logout", authorizeUser, (req, res) => {
 // SERVER
 
 app.listen(config.PORT, () => {
-  console.log(`listening on port http://localhost:${config.PORT}`);
+  console.log(
+    `${config.APP_NAME} is listening on port http://localhost:${config.PORT}`
+  );
 });
