@@ -1,4 +1,4 @@
-@url = http://localhost:3515
+@url = http://localhost:3516
 
 ### ROOT
 GET {{url}}
@@ -16,7 +16,7 @@ POST {{url}}/login
 content-type: application/json
 
 {
-	"password": "123"
+	"password": "pass828"
 }
 
 ### GET CURRENT USER
